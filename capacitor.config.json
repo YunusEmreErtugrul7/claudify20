@@ -1,5 +1,8 @@
 {
   "appId": "com.muzikcalar.app",
-  "appName": "Muzik Calar",
-  "webDir": "www"
+  "appName": "Claudify",
+  "webDir": "www",
+  "server": { "cleartext": true },
+  "android": { "allowMixedContent": true }
 }
+
