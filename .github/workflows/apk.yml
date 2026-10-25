@@ -16,13 +16,25 @@ jobs:
         with:
           distribution: temurin
           java-version: 17
-      - name: Dosyalari goster
-        run: ls -la && ls -la www
+      - name: www klasorunu hazirla
+        run: |
+          ls -la
+          if [ -f index.html ]; then
+            mkdir -p www && cp index.html www/index.html
+            echo "Kokteki index.html www klasorune kopyalandi"
+          elif [ -f www/index.html ]; then
+            echo "www/index.html kullaniliyor"
+          else
+            echo "HATA: index.html bulunamadi. Depodaki dosyalar:"
+            find . -path ./.git -prune -o -type f -print
+            exit 1
+          fi
       - run: npm install
       - run: npx cap add android
+      - name: Ikonlari olustur
+        run: npx --yes @capacitor/assets generate --android --iconBackgroundColor '#060503' --iconBackgroundColorDark '#060503'
       - run: chmod +x android/gradlew && cd android && ./gradlew assembleDebug
       - uses: actions/upload-artifact@v4
         with:
           name: muzik-calar-apk
           path: android/app/build/outputs/apk/debug/app-debug.apk
-
