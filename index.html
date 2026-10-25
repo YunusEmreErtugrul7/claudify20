@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#060503">
+<title>Claudify</title>
+<style>
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+[hidden]{display:none!important}
+html,body{height:100%;margin:0}
+body{background:#060503;color:#fff;font:15px/1.35 system-ui,"Segoe UI",Roboto,sans-serif;display:flex;flex-direction:column;padding-top:env(safe-area-inset-top,0)}
+header{display:flex;align-items:center;justify-content:space-between;padding:14px 16px 6px}
+h1{margin:0;font-size:1.5rem;font-weight:800;display:flex;align-items:center;gap:10px}
+h1 img{border-radius:8px}h1 em{font-style:normal;color:#ff8a00}
+button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
+.add{background:linear-gradient(135deg,#ffb100,#ff6a00);color:#000;font-weight:700;padding:9px 16px;border-radius:20px}
+.tabs{display:flex;gap:8px;padding:6px 16px}
+.tabs button{padding:7px 14px;border-radius:18px;background:#241c14;color:#cbb9a3}
+.tabs button.on{background:#fff;color:#000;font-weight:600}
+#lo{margin-left:auto;color:#a7a7a7;background:none}
+input:not([type=range]){font:inherit;color:#fff;border:0;border-radius:22px;background:#241c14;padding:11px 16px}
+#q{margin:6px 16px}
+::placeholder{color:#a7a7a7}
+#cn{display:flex;flex-direction:column;gap:10px;padding:16px;flex:1;overflow:auto}
+#cn p{margin:0;color:#a7a7a7}#er{color:#ff6a6a;min-height:1.2em}
+ul{list-style:none;margin:0;padding:0 8px;flex:1;overflow:auto}
+li{display:grid;grid-template-columns:48px 1fr auto 40px;gap:12px;align-items:center;padding:8px;border-radius:8px}
+li:active{background:#241c14}
+li.cur b{color:#ff8a00}
+.cv{width:48px;height:48px;border-radius:6px;display:grid;place-items:center;font-weight:800;font-size:1.3rem;color:#ffffffd9}
+.tx{min-width:0}.tx b{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tx span,.d{color:#a7a7a7;font-size:.85rem}
+.x{color:#a7a7a7;font-size:1.1rem;padding:8px;border-radius:50%}
+.empty{text-align:center;color:#a7a7a7;padding:60px 24px}.empty b{display:block;color:#fff;font-size:1.15rem;margin-bottom:6px}
+footer{background:#0f0b07;padding:10px 16px calc(10px + env(safe-area-inset-bottom,0));border-radius:14px 14px 0 0}
+.np{display:flex;gap:12px;align-items:center}.np div:last-child{min-width:0}
+.np b,.np span{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.np span{color:#a7a7a7;font-size:.85rem}
+.seek{display:flex;gap:8px;align-items:center;color:#a7a7a7;font-size:.8rem;margin:8px 0 2px}
+#sk{flex:1;accent-color:#ff8a00;height:28px}
+.ctl{display:flex;justify-content:space-between;align-items:center;max-width:380px;margin:0 auto}
+.ctl button{font-size:1.4rem;color:#b3b3b3;width:48px;height:48px;border-radius:50%}
+.ctl .on{color:#ff8a00}
+.ctl .pl{background:#fff;color:#000;font-size:1.2rem;width:56px;height:56px}
+</style>
+</head>
+<body>
+<header><h1><img src="logo.png" alt="" width="34" height="34"><span>Claud<em>ify</em></span></h1><button class="add" id="addb">＋ Ekle</button></header>
+<input id="f" type="file" accept="audio/*" multiple hidden>
+<div class="tabs"><button id="tl" class="on">Telefonda</button><button id="tp">Bilgisayarım</button><button id="lo" hidden>Çıkış</button></div>
+<input id="q" type="search" placeholder="Ne dinlemek istiyorsun?" aria-label="Ara">
+<form id="cn" hidden>
+  <p>Bilgisayardaki Claudify'da “Telefondan dinle”yi aç, sunucuyu başlat ve gösterilen adresi ile hesabını buraya gir.</p>
+  <input id="sv" placeholder="Adres (örn. http://192.168.1.5:8765)" autocapitalize="off" autocomplete="off">
+  <input id="us" placeholder="Kullanıcı adı" autocapitalize="off" autocomplete="username">
+  <input id="pw" type="password" placeholder="Şifre" autocomplete="current-password">
+  <button class="add" type="submit">Bağlan</button><div id="er"></div>
+</form>
+<ul id="ul"></ul>
+<footer>
+  <div class="np"><div class="cv" id="cv" style="background:#333">♪</div><div><b id="tt">Çalan parça yok</b><span id="ar">Müzik ekleyerek başla</span></div></div>
+  <div class="seek"><span id="cu">0:00</span><input id="sk" type="range" min="0" max="1000" value="0" aria-label="İlerleme"><span id="du">0:00</span></div>
+  <div class="ctl">
+    <button id="sh" aria-label="Karıştır">⇄</button><button id="pv" aria-label="Önceki">⏮</button>
+    <button id="pl" class="pl" aria-label="Oynat">▶</button>
+    <button id="nx" aria-label="Sonraki">⏭</button><button id="rp" aria-label="Tekrar">↻</button>
+  </div>
+</footer>
+<script>
+const $=id=>document.getElementById(id), au=new Audio();
+const ls={get:k=>{try{return localStorage.getItem(k)||''}catch(e){return ''}},set:(k,v)=>{try{v?localStorage.setItem(k,v):localStorage.removeItem(k)}catch(e){}}};
+let T=[],R=[],mode='l',ct=null,view=[],shuf=false,rep=0,url=null,drag=false,srv=ls.get('srv'),tok=ls.get('tok');
+const L=()=>mode==='p'?R:T;
+const fmt=s=>isFinite(s)&&s>0?Math.floor(s/60)+':'+String(Math.floor(s%60)).padStart(2,'0'):'';
+const esc=s=>s.replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const grad=s=>{let h=0;for(const c of s)h=(h*31+c.charCodeAt(0))%360;return`linear-gradient(135deg,hsl(${h} 60% 45%),hsl(${(h+50)%360} 70% 25%))`};
+const cover=t=>t.id?`background:url(${srv}/api/cover/${t.id}?token=${tok}) center/cover,${grad(t.title+t.artist)}`:`background:${grad(t.title+t.artist)}`;
+function parse(n){const b=n.replace(/\.[^.]+$/,'').replace(/_/g,' '),i=b.indexOf(' - ');return i>0?{artist:b.slice(0,i).trim(),title:b.slice(i+3).trim()}:{artist:'Bilinmeyen sanatçı',title:b.trim()}}
+
+// Telefondaki şarkılar IndexedDB'de saklanır, internet gerekmez
+const dbp=new Promise((res,rej)=>{const r=indexedDB.open('muzik',1);r.onupgradeneeded=()=>r.result.createObjectStore('t',{keyPath:'id',autoIncrement:true});r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)});
+const tx=async(mode,fn)=>{const d=await dbp;return new Promise((res,rej)=>{const t=d.transaction('t',mode),q=fn(t.objectStore('t'));t.oncomplete=()=>res(q&&q.result);t.onerror=()=>rej(t.error)})};
+const wrap=r=>({...r,...parse(r.name)});
+const measure=b=>new Promise(res=>{const a=new Audio(),u=URL.createObjectURL(b);a.preload='metadata';a.onloadedmetadata=()=>{res(a.duration);URL.revokeObjectURL(u)};a.onerror=()=>{res(0);URL.revokeObjectURL(u)};a.src=u});
+
+async function addFiles(files){
+  for(const f of files){
+    if(!f.type.startsWith('audio/')&&!/\.(mp3|wav|flac|ogg|m4a|aac|opus)$/i.test(f.name))continue;
+    const rec={name:f.name,blob:f,dur:0};
+    try{rec.id=await tx('readwrite',s=>s.add(rec))}catch(e){alert('Kaydedilemedi: '+f.name);continue}
+    const w=wrap(rec);T.push(w);render();
+    const d=await measure(f);if(d){rec.dur=w.dur=d;tx('readwrite',s=>s.put(rec));render()}
+  }
+}
+function render(){
+  const q=$('q').value.toLowerCase(),l=L(),p=mode==='p';
+  view=l.map((_,i)=>i).filter(i=>(l[i].title+' '+l[i].artist).toLowerCase().includes(q));
+  $('ul').innerHTML=view.length?view.map(i=>{const t=l[i];return`<li data-i="${i}" class="${t===ct?'cur':''}"><div class="cv" style="${cover(t)}">${p?'':esc((t.title[0]||'♪').toUpperCase())}</div><div class="tx"><b>${esc(t.title)}</b><span>${esc(t.artist)}</span></div><span class="d">${fmt(t.dur)}</span>${p?`<button class="x" data-dl="${i}" aria-label="Telefona indir">⬇</button>`:`<button class="x" data-del="${i}" aria-label="Sil">🗑</button>`}</li>`}).join(''):`<div class="empty"><b>${l.length?'Sonuç yok':p?'Bilgisayarında şarkı yok':'Listen boş'}</b>${l.length?'Aramayı değiştir.':p?"Bilgisayardaki uygulamaya şarkı ekle.":'“Ekle” düğmesine bas ve telefonundaki müzikleri seç.'}</div>`;
+}
+function info(){
+  const t=ct;
+  $('tt').textContent=t?t.title:'Çalan parça yok';$('ar').textContent=t?t.artist:'Müzik ekleyerek başla';
+  $('cv').style.cssText=t?cover(t):'background:#333';$('cv').textContent=t&&!t.id?(t.title[0]||'♪').toUpperCase():(t?'':'♪');
+  if('mediaSession' in navigator&&t)navigator.mediaSession.metadata=new MediaMetadata({title:t.title,artist:t.artist});
+}
+function play(i){
+  const t=L()[i];ct=t;if(url){URL.revokeObjectURL(url);url=null}
+  if(t.blob){url=URL.createObjectURL(t.blob);au.src=url}else au.src=`${srv}/api/stream/${t.id}?token=${tok}`;
+  au.play().catch(()=>{});info();render();
+}
+function step(d,auto){
+  if(!view.length)return;
+  const l=L();let p=view.findIndex(i=>l[i]===ct),n;
+  if(shuf&&view.length>1){do{n=view[Math.floor(Math.random()*view.length)]}while(l[n]===ct)}
+  else{p+=d;if(p>=view.length){if(rep===1||!auto)p=0;else{au.pause();return}}if(p<0)p=view.length-1;n=view[p]}
+  play(n);
+}
+async function del(i){
+  const t=T[i];if(!confirm('“'+t.title+'” silinsin mi?'))return;
+  await tx('readwrite',s=>s.delete(t.id));
+  if(t===ct){au.pause();au.removeAttribute('src');ct=null;info()}
+  T.splice(i,1);render();
+}
+async function dl(i){
+  const t=R[i],b=document.querySelector(`[data-dl="${i}"]`);b.textContent='…';
+  try{
+    const r=await fetch(`${srv}/api/stream/${t.id}?token=${tok}`);if(!r.ok)throw 0;
+    const blob=await r.blob(),fn=decodeURIComponent(r.headers.get('X-Filename')||'')||`${t.artist} - ${t.title}.mp3`;
+    await addFiles([new File([blob],fn,{type:blob.type})]);b.textContent='✓';
+  }catch(e){b.textContent='⬇';alert('İndirilemedi. Bağlantını kontrol et.')}
+}
+async function loadRemote(){
+  try{
+    const r=await fetch(`${srv}/api/tracks?token=${tok}`);
+    if(r.status===401){tok='';ls.set('tok','');return setMode('p')}
+    R=(await r.json()).map(x=>({...x}));render();
+  }catch(e){$('ul').innerHTML=`<div class="empty"><b>Bağlanılamadı</b>Bilgisayarın açık, sunucunun çalışır ve telefonla aynı ağda (ya da Tailscale'de) olduğundan emin ol.</div>`}
+}
+function setMode(m){
+  mode=m;$('tl').classList.toggle('on',m==='l');$('tp').classList.toggle('on',m==='p');$('q').value='';
+  const need=m==='p'&&!tok;$('cn').hidden=!need;$('ul').hidden=need;$('q').hidden=need;$('lo').hidden=!(m==='p'&&tok);
+  $('addb').hidden=m==='p';
+  if(m==='p'&&tok){$('ul').innerHTML='';loadRemote()}else render();
+}
+const toggle=()=>{if(!ct&&view.length)return play(view[0]);if(ct)au.paused?au.play():au.pause()};
+
+$('tl').onclick=()=>setMode('l');$('tp').onclick=()=>setMode('p');
+$('lo').onclick=()=>{tok='';ls.set('tok','');R=[];setMode('p')};
+$('cn').onsubmit=async e=>{
+  e.preventDefault();$('er').textContent='Bağlanıyor...';
+  let a=$('sv').value.trim().replace(/\/+$/,'');if(a&&!/^https?:\/\//.test(a))a='http://'+a;
+  try{
+    const r=await fetch(a+'/api/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({user:$('us').value.trim(),pass:$('pw').value})});
+    if(r.status===401){$('er').textContent='Kullanıcı adı veya şifre yanlış.';return}
+    if(!r.ok)throw 0;
+    tok=(await r.json()).token;srv=a;ls.set('srv',srv);ls.set('tok',tok);$('pw').value='';$('er').textContent='';setMode('p');
+  }catch(x){$('er').textContent='Bağlanılamadı. Adresi ve Wi-Fi bağlantısını kontrol et, bilgisayarda sunucunun açık olduğundan emin ol.'}
+};
+$('sv').value=srv;
+$('addb').onclick=()=>$('f').click();
+$('f').onchange=e=>{addFiles([...e.target.files]);e.target.value=''};
+$('q').oninput=render;
+$('ul').onclick=e=>{
+  const d=e.target.closest('[data-del]');if(d)return del(+d.dataset.del);
+  const g=e.target.closest('[data-dl]');if(g)return dl(+g.dataset.dl);
+  const l=e.target.closest('li');if(l)play(+l.dataset.i);
+};
+$('pl').onclick=toggle;$('nx').onclick=()=>step(1,false);
+$('pv').onclick=()=>{if(au.currentTime>3)au.currentTime=0;else step(-1,false)};
+$('sh').onclick=e=>{shuf=!shuf;e.currentTarget.classList.toggle('on',shuf)};
+$('rp').onclick=e=>{rep=(rep+1)%3;e.currentTarget.classList.toggle('on',rep>0);e.currentTarget.textContent=rep===2?'↻¹':'↻'};
+au.onplay=()=>$('pl').textContent='❚❚';au.onpause=()=>$('pl').textContent='▶';
+au.onended=()=>{if(rep===2){au.currentTime=0;au.play()}else step(1,true)};
+au.onloadedmetadata=()=>$('du').textContent=fmt(au.duration)||'0:00';
+au.ontimeupdate=()=>{$('cu').textContent=fmt(au.currentTime)||'0:00';if(!drag&&au.duration)$('sk').value=au.currentTime/au.duration*1000};
+$('sk').oninput=()=>{drag=true;if(au.duration)au.currentTime=$('sk').value/1000*au.duration};
+$('sk').onchange=()=>{drag=false};
+if('mediaSession' in navigator){
+  const m=navigator.mediaSession;
+  m.setActionHandler('play',()=>au.play());m.setActionHandler('pause',()=>au.pause());
+  m.setActionHandler('previoustrack',()=>step(-1,false));m.setActionHandler('nexttrack',()=>step(1,false));
+}
+(async()=>{
+  try{navigator.storage&&navigator.storage.persist&&navigator.storage.persist()}catch(e){}
+  try{T=(await tx('readonly',s=>s.getAll())).map(wrap)}catch(e){}
+  render();
+})();
+</script>
+</body>
+</html>
