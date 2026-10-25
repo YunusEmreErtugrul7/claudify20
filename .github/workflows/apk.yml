@@ -29,12 +29,20 @@ jobs:
             find . -path ./.git -prune -o -type f -print
             exit 1
           fi
+          if [ -f logo.png ]; then mkdir -p www && cp logo.png www/logo.png; fi
       - run: npm install
       - run: npx cap add android
       - name: Ikonlari olustur
-        run: npx --yes @capacitor/assets generate --android --iconBackgroundColor '#060503' --iconBackgroundColorDark '#060503'
+        run: |
+          if [ -f icon-only.png ]; then mkdir -p assets && cp icon-only.png icon-foreground.png assets/; fi
+          if [ -f assets/icon-only.png ]; then
+            npx --yes @capacitor/assets generate --android --iconBackgroundColor '#060503' --iconBackgroundColorDark '#060503'
+          else
+            echo "Ikon dosyalari yok, varsayilan simge kullanilacak"
+          fi
       - run: chmod +x android/gradlew && cd android && ./gradlew assembleDebug
       - uses: actions/upload-artifact@v4
         with:
           name: muzik-calar-apk
           path: android/app/build/outputs/apk/debug/app-debug.apk
+
